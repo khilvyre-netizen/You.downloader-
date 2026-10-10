@@ -1,0 +1,6 @@
+{
+  "name": "OmniRip – Social Media Video Downloader",
+  "description": "Fast, mobile-friendly video and audio downloader with format analysis, quality selection, and automated temporary file cleanup.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
