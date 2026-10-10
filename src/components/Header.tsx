@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { DownloadCloud, Menu, X, Shield, FileText, HelpCircle, CheckCircle2 } from 'lucide-react';
+import { DownloadCloud, Menu, X, Shield, FileText, HelpCircle, CheckCircle2, Settings } from 'lucide-react';
 
 interface HeaderProps {
   onOpenPrivacy: () => void;
   onOpenTerms: () => void;
+  onOpenSettings: () => void;
   onScrollToSection: (sectionId: string) => void;
   onQuickPaste: () => void;
 }
@@ -11,6 +12,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   onOpenPrivacy,
   onOpenTerms,
+  onOpenSettings,
   onScrollToSection,
   onQuickPaste,
 }) => {
@@ -83,7 +85,15 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
 
         {/* Zone 3: Primary Action */}
-        <div className="hidden sm:flex items-center gap-3">
+        <div className="hidden sm:flex items-center gap-2">
+          <button
+            onClick={onOpenSettings}
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-900 rounded-lg border border-transparent hover:border-slate-800 transition-colors cursor-pointer"
+            title="Backend Server Settings"
+            aria-label="Server Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
           <button
             onClick={onQuickPaste}
             className="px-3.5 py-1.5 text-xs font-semibold text-slate-200 bg-slate-900 border border-slate-700/80 rounded-lg hover:bg-slate-800 hover:text-white hover:border-slate-600 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
@@ -96,6 +106,13 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Mobile Menu Hamburger */}
         <div className="flex md:hidden items-center gap-2">
+          <button
+            onClick={onOpenSettings}
+            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-900 focus:outline-none cursor-pointer"
+            aria-label="Server Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-900 focus:outline-none cursor-pointer"
@@ -133,6 +150,16 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <HelpCircle className="w-4 h-4 text-slate-400" />
             Frequently Asked Questions
+          </button>
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              onOpenSettings();
+            }}
+            className="w-full text-left px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-900 rounded-lg flex items-center gap-2"
+          >
+            <Settings className="w-4 h-4 text-slate-400" />
+            Backend Server Settings
           </button>
           <div className="border-t border-slate-800 pt-2 mt-2 space-y-1">
             <button

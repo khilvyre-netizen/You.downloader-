@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Server, Settings } from 'lucide-react';
 import { Header } from './components/Header';
 import { UrlInputSection } from './components/UrlInputSection';
 import { VideoPreviewCard } from './components/VideoPreviewCard';
@@ -10,8 +11,10 @@ import { FeaturesSection } from './components/FeaturesSection';
 import { FaqSection } from './components/FaqSection';
 import { PrivacyModal } from './components/PrivacyModal';
 import { TermsModal } from './components/TermsModal';
+import { ServerSettingsModal } from './components/ServerSettingsModal';
 import { Footer } from './components/Footer';
 import { VideoMetadata, DownloadJobStatus, SampleItem } from './types';
+import { fetchApi, parseApiResponse, isStaticHost, getApiBaseUrl } from './api';
 
 export default function App() {
   const [url, setUrl] = useState('');
@@ -22,6 +25,7 @@ export default function App() {
 
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [samples, setSamples] = useState<SampleItem[]>([
@@ -44,18 +48,22 @@ export default function App() {
 
   const pollIntervalRef = useRef<any>(null);
 
-  // Fetch sample links and server metadata on load
-  useEffect(() => {
-    fetch('/api/info')
-      .then((res) => (res.ok ? res.json() : null))
+  const loadServerInfo = () => {
+    fetchApi('/api/info')
+      .then((res) => (res.ok ? parseApiResponse(res) : null))
       .then((data) => {
         if (data?.samples?.length) {
           setSamples(data.samples);
         }
       })
       .catch(() => {
-        // Fallback samples already configured
+        // Fallback samples already present
       });
+  };
+
+  // Fetch sample links and server metadata on load
+  useEffect(() => {
+    loadServerInfo();
   }, []);
 
   const showToast = (msg: string) => {
@@ -77,9 +85,9 @@ export default function App() {
 
       pollIntervalRef.current = setInterval(async () => {
         try {
-          const res = await fetch(`/api/status/${downloadJob.id}`);
+          const res = await fetchApi(`/api/status/${downloadJob.id}`);
           if (res.ok) {
-            const data: DownloadJobStatus = await res.json();
+            const data: DownloadJobStatus = await parseApiResponse(res);
             setDownloadJob(data);
             if (data.status === 'ready' || data.status === 'error') {
               clearInterval(pollIntervalRef.current);
@@ -113,19 +121,15 @@ export default function App() {
     setMetadata(null);
 
     try {
-      const res = await fetch('/api/analyze', {
+      const res = await fetchApi('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: inputUrl }),
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "We couldn't process this URL. Please check the link and try again.");
-      }
-
+      const data = await parseApiResponse(res);
       setMetadata(data);
+
       // Smooth scroll to preview
       setTimeout(() => {
         const previewElement = document.getElementById('video-preview');
@@ -150,7 +154,7 @@ export default function App() {
     if (!metadata) return;
 
     try {
-      const res = await fetch('/api/download', {
+      const res = await fetchApi('/api/download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -162,11 +166,7 @@ export default function App() {
         }),
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to start download job.');
-      }
+      const data = await parseApiResponse(res);
 
       setDownloadJob({
         id: data.jobId,
@@ -182,7 +182,7 @@ export default function App() {
   // Cancel Job handler
   const handleCancelJob = async (jobId: string) => {
     try {
-      await fetch(`/api/cleanup/${jobId}`, { method: 'POST' });
+      await fetchApi(`/api/cleanup/${jobId}`, { method: 'POST' });
     } catch {}
     setDownloadJob(null);
   };
@@ -226,8 +226,28 @@ export default function App() {
     }
   };
 
+  const showStaticHostBanner = isStaticHost() && !getApiBaseUrl();
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500/30">
+      {/* GitHub Pages static warning banner */}
+      {showStaticHostBanner && (
+        <div className="bg-indigo-950/90 border-b border-indigo-800/80 px-4 py-2.5 text-xs text-indigo-200 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 max-w-4xl">
+            <Server className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span>
+              <strong>GitHub Pages Static Mode:</strong> Connect your deployed backend server (e.g. Render, Railway, VPS) to enable live video downloading.
+            </span>
+          </div>
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="px-2.5 py-1 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-medium shrink-0 cursor-pointer transition-colors"
+          >
+            Configure API
+          </button>
+        </div>
+      )}
+
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 border border-indigo-500/60 shadow-xl text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium animate-in fade-in slide-in-from-bottom-2 duration-200">
@@ -239,6 +259,7 @@ export default function App() {
       <Header
         onOpenPrivacy={() => setIsPrivacyOpen(true)}
         onOpenTerms={() => setIsTermsOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
         onScrollToSection={handleScrollToSection}
         onQuickPaste={handlePasteClipboard}
       />
@@ -307,6 +328,16 @@ export default function App() {
       <TermsModal
         isOpen={isTermsOpen}
         onClose={() => setIsTermsOpen(false)}
+      />
+
+      {/* Server Settings Modal */}
+      <ServerSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onSaved={() => {
+          showToast('Server settings updated');
+          loadServerInfo();
+        }}
       />
 
       {/* Footer */}

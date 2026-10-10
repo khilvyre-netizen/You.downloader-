@@ -2,6 +2,7 @@ import React from 'react';
 import { DownloadCloud, CheckCircle2, AlertCircle, Loader2, ArrowDownToLine, Trash2, X } from 'lucide-react';
 import { DownloadJobStatus } from '../types';
 import { formatBytes } from '../utils';
+import { getApiBaseUrl } from '../api';
 
 interface DownloadProgressModalProps {
   job: DownloadJobStatus | null;
@@ -22,9 +23,13 @@ export const DownloadProgressModal: React.FC<DownloadProgressModalProps> = ({
 
   const handleDownloadFile = () => {
     if (job.readyUrl) {
-      // Trigger download
+      // Trigger download with full API base URL if remote
+      const baseUrl = getApiBaseUrl();
+      const finalUrl = job.readyUrl.startsWith('http')
+        ? job.readyUrl
+        : `${baseUrl}${job.readyUrl}`;
       const link = document.createElement('a');
-      link.href = job.readyUrl;
+      link.href = finalUrl;
       link.setAttribute('download', job.fileName || `OmniRip_${job.id.slice(0, 8)}.${job.targetExt}`);
       document.body.appendChild(link);
       link.click();

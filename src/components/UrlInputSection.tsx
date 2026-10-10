@@ -37,7 +37,7 @@ export const UrlInputSection: React.FC<UrlInputSectionProps> = ({
   };
 
   return (
-    <section id="top" className="pt-10 pb-8 sm:pt-16 sm:pb-12 text-center">
+    <section id="top" className="relative overflow-hidden pt-10 pb-8 sm:pt-16 sm:pb-12 text-center bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(99,102,241,0.15),transparent_70%)]">
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
         {/* Anti-slop clean kicker */}
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-950/60 border border-indigo-800/40 text-xs font-medium text-indigo-300 mb-6">
